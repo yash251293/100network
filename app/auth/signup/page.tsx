@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { useRouter } from "next/navigation" // Added for redirection
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -39,12 +39,45 @@ export default function SignupPage() {
     }
 
     // TODO: Add signup logic here
-    console.log("Signup attempt:", formData)
+    // console.log("Signup attempt:", formData)
 
     // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
+    // setTimeout(() => {
+    //   setIsLoading(false)
+    // }, 1000)
+
+    const name = `${formData.firstName} ${formData.lastName}`;
+
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          name: name,
+          password: formData.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Signup successful! Please login.');
+        console.log('Signup successful:', result);
+        // Redirect to login page - ensure router is imported
+        router.push('/auth/login'); 
+      } else {
+        alert(`Signup failed: ${result.message || 'Unknown error'}`);
+        console.error('Signup error:', result);
+      }
+    } catch (error) {
+      alert('An unexpected error occurred. Please try again.');
+      console.error('Unexpected signup error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

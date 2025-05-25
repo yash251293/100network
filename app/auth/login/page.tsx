@@ -24,19 +24,35 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // TODO: Add actual login logic here
-      console.log("Login attempt:", formData)
+      // console.log("Login attempt:", formData)
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-      // For now, we'll just redirect to the explore page
-      // In a real app, you would verify credentials and handle tokens
-      router.push("/explore")
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Login successful!');
+        console.log('Login successful:', result);
+        // Redirect to the feed page
+        router.push('/feed'); 
+      } else {
+        alert(`Login failed: ${result.message || 'Invalid credentials or server error'}`);
+        console.error('Login error:', result);
+      }
     } catch (error) {
-      console.error("Login failed:", error)
+      alert('An unexpected error occurred during login. Please try again.');
+      console.error("Login failed with exception:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 

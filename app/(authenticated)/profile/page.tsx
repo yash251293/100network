@@ -1,13 +1,22 @@
+"use client"; // Required for useState, useEffect, etc.
+
+import React, { useState, useEffect, FormEvent } from "react"; // Added React, useState, useEffect, FormEvent
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card" // Added CardFooter
 import { Badge } from "@/components/ui/badge"
+import {
+  MapPin,
+import { Input } from "@/components/ui/input"; // Added Input
+import { Label } from "@/components/ui/label"; // Added Label
 import {
   MapPin,
   Mail,
   Phone,
   Globe,
   Edit,
+  Save, // Added Save
+  XCircle, // Added XCircle for Cancel
   Plus,
   Award,
   Briefcase,
@@ -17,7 +26,109 @@ import {
   MessageCircle,
 } from "lucide-react"
 
+interface UserData {
+  id: number;
+  name: string;
+  email: string;
+  // Add other fields as needed from your API, e.g., title, location, etc.
+  // For now, focusing on name and email as per the task.
+}
+
+const MOCK_USER_ID = 1; // As per task instruction
+
 export default function ProfilePage() {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Form state for editing - initialize with empty or default values
+  const [editFormData, setEditFormData] = useState({ name: "", email: "" });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/profile/${MOCK_USER_ID}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `Failed to fetch user data: ${response.status}`);
+        }
+        const data: UserData = await response.json();
+        setUserData(data);
+        setEditFormData({ name: data.name, email: data.email }); // Pre-fill form
+      } catch (err: any) {
+        setError(err.message || "An unknown error occurred");
+        console.error("Fetch user data error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []); // Empty dependency array means this runs once on mount
+
+  const handleEditToggle = () => {
+    if (userData) {
+      // Reset form data to current user data when entering edit mode
+      setEditFormData({ name: userData.name, email: userData.email });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveProfile = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!userData) return;
+
+    setIsLoading(true); // Indicate loading state for save operation
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/profile/${MOCK_USER_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editFormData.name,
+          email: editFormData.email,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || `Failed to update profile: ${response.status}`);
+      }
+
+      setUserData(result); // Update local state with the new data from response
+      setIsEditing(false);
+      alert("Profile updated successfully!");
+    } catch (err: any) {
+      setError(err.message || "An unknown error occurred during update.");
+      alert(`Error updating profile: ${err.message}`);
+      console.error("Update profile error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  if (isLoading && !userData) { // Show loading only on initial load
+    return <div className="container max-w-4xl py-6 text-center">Loading profile...</div>;
+  }
+
+  if (error) {
+    return <div className="container max-w-4xl py-6 text-center text-red-500">Error: {error}</div>;
+  }
+
+  if (!userData) {
+    return <div className="container max-w-4xl py-6 text-center">No user data found.</div>;
+  }
+
   return (
     <div className="container max-w-4xl py-6">
       {/* Header Card */}
@@ -32,32 +143,32 @@ export default function ProfilePage() {
               {/* Profile Picture */}
               <div className="relative -mt-20 mb-6 sm:mb-0">
                 <Avatar className="h-32 w-32 border-4 border-white">
-                  <AvatarImage src="/professional-user-avatar.png" alt="Your Name" />
-                  <AvatarFallback className="text-2xl">YN</AvatarFallback>
+                  <AvatarImage src="/professional-user-avatar.png" alt={userData.name} />
+                  <AvatarFallback className="text-2xl">{userData.name?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
-                <Button
+                {/* <Button
                   size="icon"
                   variant="outline"
                   className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white"
                 >
                   <Edit className="h-4 w-4" />
-                </Button>
+                </Button> */}
               </div>
 
               {/* Name and Title */}
               <div className="flex-1">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h1 className="text-2xl font-bold">Alex Johnson</h1>
-                    <p className="text-lg text-muted-foreground">Senior Software Engineer at TechCorp</p>
+                    <h1 className="text-2xl font-bold">{userData.name}</h1>
+                    <p className="text-lg text-muted-foreground">Senior Software Engineer at TechCorp</p> {/* Placeholder */}
                     <div className="flex items-center text-sm text-muted-foreground mt-1">
                       <MapPin className="h-4 w-4 mr-1" />
-                      San Francisco, CA
+                      San Francisco, CA {/* Placeholder */}
                     </div>
                   </div>
-                  <Button variant="outline" className="ml-4">
+                  <Button variant="outline" onClick={handleEditToggle} className="ml-4">
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit Profile
+                    {isEditing ? "Cancel" : "Edit Profile"}
                   </Button>
                 </div>
 
@@ -65,28 +176,28 @@ export default function ProfilePage() {
                 <div className="flex flex-wrap gap-4 mt-4 text-sm">
                   <div className="flex items-center text-blue-600">
                     <Mail className="h-4 w-4 mr-1" />
-                    alex.johnson@email.com
+                    {userData.email}
                   </div>
-                  <div className="flex items-center text-muted-foreground">
+                  <div className="flex items-center text-muted-foreground"> {/* Placeholder */}
                     <Phone className="h-4 w-4 mr-1" />
                     (555) 123-4567
                   </div>
-                  <div className="flex items-center text-blue-600">
+                  <div className="flex items-center text-blue-600"> {/* Placeholder */}
                     <Globe className="h-4 w-4 mr-1" />
                     alexjohnson.dev
                   </div>
                 </div>
 
-                {/* Stats */}
+                {/* Stats - Placeholder */}
                 <div className="flex gap-6 mt-4 text-sm">
-                  <div className="flex items-center">
+                  <div className="flex items-center"> {/* Placeholder */}
                     <Users className="h-4 w-4 mr-1 text-muted-foreground" />
-                    <span className="font-medium">500+</span>
+                    <span className="font-medium">500+</span> 
                     <span className="text-muted-foreground ml-1">connections</span>
                   </div>
-                  <div className="flex items-center">
+                  <div className="flex items-center"> {/* Placeholder */}
                     <Eye className="h-4 w-4 mr-1 text-muted-foreground" />
-                    <span className="font-medium">1,234</span>
+                    <span className="font-medium">1,234</span> 
                     <span className="text-muted-foreground ml-1">profile views</span>
                   </div>
                 </div>
@@ -99,25 +210,71 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* About Section */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <h2 className="text-xl font-semibold">About</h2>
-              <Button variant="ghost" size="icon">
-                <Edit className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
-                Passionate software engineer with 7+ years of experience building scalable web applications. Specialized
-                in React, Node.js, and cloud technologies. I love solving complex problems and mentoring junior
-                developers. Currently focused on building AI-powered solutions that make a positive impact on people's
-                lives.
-              </p>
-            </CardContent>
-          </Card>
+          
+          {isEditing ? (
+            <Card>
+              <CardHeader>
+                <h2 className="text-xl font-semibold">Edit Profile Details</h2>
+              </CardHeader>
+              <form onSubmit={handleSaveProfile}>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input 
+                      id="name" 
+                      name="name" 
+                      value={editFormData.name} 
+                      onChange={handleInputChange} 
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      name="email" 
+                      type="email" 
+                      value={editFormData.email} 
+                      onChange={handleInputChange} 
+                      placeholder="your.email@example.com"
+                    />
+                  </div>
+                  {/* Add other fields here if needed, e.g., for title, location, etc. */}
+                </CardContent>
+                <CardFooter className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={handleEditToggle}>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? (<> <Save className="h-4 w-4 mr-2 animate-spin" /> Saving...</>) : (<> <Save className="h-4 w-4 mr-2" /> Save Changes</>)}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+          ) : (
+            <>
+              {/* About Section - Placeholder, or could be part of editable fields */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <h2 className="text-xl font-semibold">About</h2>
+                  {/* <Button variant="ghost" size="icon" onClick={handleEditToggle}>
+                    <Edit className="h-4 w-4" />
+                  </Button> */}
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Passionate software engineer with 7+ years of experience building scalable web applications. Specialized
+                    in React, Node.js, and cloud technologies. I love solving complex problems and mentoring junior
+                    developers. Currently focused on building AI-powered solutions that make a positive impact on people's
+                    lives. (This is static placeholder text for now)
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
 
-          {/* Experience Section */}
+          {/* Experience Section - Static for now */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <h2 className="text-xl font-semibold">Experience</h2>
