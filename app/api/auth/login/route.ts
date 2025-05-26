@@ -45,8 +45,11 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      console.log("User object from DB:", user); // ADDED FOR DEBUGGING
+      const payloadToSign = { userId: user.id, email: user.email, name: user.name, role: user.role };
+      console.log("JWT payload being signed:", payloadToSign); // ADDED FOR DEBUGGING
       const token = sign(
-        { userId: user.id, email: user.email, name: user.name, role: user.role },
+        payloadToSign, // Use the new constant here
         jwtSecret,
         { expiresIn: '1d' } // 1 day expiration
       );
