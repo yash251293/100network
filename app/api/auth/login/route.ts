@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbConnection } from '@/lib/db';
 import bcrypt from 'bcryptjs'; // Corrected import
+import { sign } from 'jsonwebtoken';
+import { serialize } from 'cookie';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -36,15 +38,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 }); // Password mismatch
     }
 
-    // For now, returning user information (excluding password hash)
-    // In a real application, you would generate and return a session token (e.g., JWT)
-    return NextResponse.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      message: 'Login successful'
-      // token: "mock-jwt-token" // Example of where a token might go
-    }, { status: 200 });
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET is not defined in environment variables.');
+      return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
+    }
+
+    try {
+      const token = sign(
+        { userId: user.id, email: user.email, name: user.name },
+        jwtSecret,
+        { expiresIn: '1d' } // 1 day expiration
+      );
+
+      const cookie = serialize('sessionToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', // Or 'strict'
+        maxAge: 60 * 60 * 24 * 1, // 1 day in seconds
+        path: '/',
+      });
+
+      return NextResponse.json(
+        { message: 'Login successful' },
+        {
+          status: 200,
+          headers: { 'Set-Cookie': cookie },
+        }
+      );
+    } catch (jwtError) {
+      console.error('JWT signing error:', jwtError);
+      return NextResponse.json({ message: 'Failed to create session' }, { status: 500 });
+    }
 
   } catch (error) {
     console.error('Login error:', error);

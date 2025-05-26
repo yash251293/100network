@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -15,6 +16,28 @@ import { Button } from "@/components/ui/button"
 
 export default function Header() {
   const [notifications, setNotifications] = useState(18)
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        router.push('/auth/login');
+      } else {
+        console.error('Logout failed:', await response.json());
+        alert('Logout failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+      alert('An error occurred during logout.');
+    }
+  };
 
   return (
     <header className="border-b bg-background">
@@ -76,8 +99,8 @@ export default function Header() {
               <DropdownMenuItem asChild>
                 <Link href="/terms">Terms of Service</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/logout">Log out</Link>
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
