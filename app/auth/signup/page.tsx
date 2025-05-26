@@ -61,20 +61,49 @@ export default function SignupPage() {
         }),
       });
 
-      const result = await response.json();
+      const signupResult = await response.json();
 
       if (response.ok) {
-        alert('Signup successful! Please login.');
-        console.log('Signup successful:', result);
-        // Redirect to login page - ensure router is imported
-        router.push('/auth/login'); 
+        console.log('Signup successful:', signupResult);
+        // Now attempt to auto-login
+        try {
+          const loginResponse = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: formData.email, // Use email from form
+              password: formData.password, // Use password from form
+            }),
+          });
+
+          const loginResult = await loginResponse.json();
+
+          if (loginResponse.ok) {
+            alert('Signup and login successful!');
+            console.log('Auto-login successful:', loginResult);
+            // Placeholder for session management: store loginResult.user or loginResult.token
+            router.push('/feed'); // Redirect to feed
+          } else {
+            // Auto-login failed
+            alert(`Signup successful, but auto-login failed: ${loginResult.message || 'Please login manually.'}`);
+            console.error('Auto-login error:', loginResult);
+            router.push('/auth/login'); // Redirect to login page
+          }
+        } catch (loginError) {
+          alert('Signup successful, but an error occurred during auto-login. Please try logging in manually.');
+          console.error('Unexpected auto-login error:', loginError);
+          router.push('/auth/login'); // Redirect to login page
+        }
       } else {
-        alert(`Signup failed: ${result.message || 'Unknown error'}`);
-        console.error('Signup error:', result);
+        // Signup failed
+        alert(`Signup failed: ${signupResult.message || 'Unknown error'}`);
+        console.error('Signup error:', signupResult);
       }
-    } catch (error) {
-      alert('An unexpected error occurred. Please try again.');
-      console.error('Unexpected signup error:', error);
+    } catch (signupError) {
+      alert('An unexpected error occurred during signup. Please try again.');
+      console.error('Unexpected signup error:', signupError);
     } finally {
       setIsLoading(false);
     }
