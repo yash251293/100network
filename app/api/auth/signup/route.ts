@@ -35,10 +35,11 @@ export async function POST(request: NextRequest) {
 
     // Store user
     const result = await db.run(
-      'INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)',
+      'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
       email,
       name,
-      passwordHash
+      passwordHash,
+      'user' // Explicitly set role
     );
 
     if (!result.lastID) {
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
       id: result.lastID,
       email,
       name,
+      role: 'user', // Include role in response
       message: 'User registered successfully'
     }, { status: 201 });
 

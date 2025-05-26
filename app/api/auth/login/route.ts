@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     db = await getDbConnection();
 
     // Fetch user by email
-    const user = await db.get('SELECT id, email, name, password_hash FROM users WHERE email = ?', email);
+    const user = await db.get('SELECT id, email, name, password_hash, role FROM users WHERE email = ?', email);
 
     if (!user) {
       return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 }); // User not found
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const token = sign(
-        { userId: user.id, email: user.email, name: user.name },
+        { userId: user.id, email: user.email, name: user.name, role: user.role },
         jwtSecret,
         { expiresIn: '1d' } // 1 day expiration
       );

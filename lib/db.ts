@@ -21,6 +21,7 @@ async function initializeDatabaseSchema(dbInstance: Database) {
       email TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
       password_hash TEXT NOT NULL,
+      role TEXT DEFAULT 'user' NOT NULL, -- New column
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
