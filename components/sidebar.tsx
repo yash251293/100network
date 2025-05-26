@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Briefcase, Calendar, Globe, Inbox, LayoutDashboard, MessageSquare, Users, Building2 } from "lucide-react"
+import { Briefcase, Calendar, Globe, Inbox, LayoutDashboard, MessageSquare, Users, Building2, ShieldCheck } from "lucide-react" // Added ShieldCheck
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useUser } from "@/hooks/use-user"; // Import useUser
 
-const navItems = [
+const baseNavItems = [ // Renamed to baseNavItems
   {
     name: "Explore",
     href: "/explore",
@@ -53,6 +54,22 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { user, loading, error } = useUser();
+
+  let displayedNavItems = [...baseNavItems];
+
+  if (!loading && user && user.role === 'admin') {
+    displayedNavItems.unshift({ // Add Admin link to the beginning
+      name: "Admin",
+      href: "/admin/users",
+      icon: ShieldCheck,
+    });
+  }
+
+  // Log error for debugging if needed, but don't break UI
+  if (error) {
+    console.error("Error fetching user in sidebar:", error);
+  }
 
   return (
     <div className="w-64 border-r bg-background h-full flex flex-col">
@@ -66,7 +83,7 @@ export default function Sidebar() {
         </Link>
       </div>
       <nav className="flex-1 px-2 py-2 space-y-1">
-        {navItems.map((item) => (
+        {displayedNavItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
