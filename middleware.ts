@@ -6,7 +6,6 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get('sessionToken')?.value;
-  const sessionToken = request.cookies.get('sessionToken')?.value;
   // const { pathname } = request.nextUrl; // Not needed if matcher is specific enough
 
   if (!sessionToken) {
